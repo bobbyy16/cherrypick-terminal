@@ -482,10 +482,16 @@ async function showMainUI(
     });
     screen.append(prompt);
 
-    // Default base = currentBranch (e.g. canvas)
+    // Try to guess the base branch from the current branch name (e.g. STO-3000-canvas -> canvas)
+    // If we can't guess, default to 'main'
+    let defaultBase = 'main';
+    if (state.currentBranch.includes('canvas')) defaultBase = 'canvas';
+    else if (state.currentBranch.includes('dev')) defaultBase = 'dev';
+    else if (state.currentBranch.includes('master')) defaultBase = 'master';
+
     prompt.input(
-      `Target branch (base to merge into, e.g. ${state.currentBranch}):`,
-      state.currentBranch,
+      `Target branch (base to merge into, e.g. ${defaultBase}):`,
+      defaultBase,
       async (_err, targetBranch) => {
         if (!targetBranch) {
           prompt.destroy();
@@ -506,8 +512,8 @@ async function showMainUI(
               const pr = await createPullRequest({
                 token: getSavedToken(),
                 remoteUrl: state.remoteUrl,
-                head: state.currentBranch,
-                base: targetBranch,
+                head: state.currentBranch, // The branch we just cherry-picked INTO
+                base: targetBranch,        // The branch we want to merge into (e.g. canvas)
                 title,
               });
               setStatus(
