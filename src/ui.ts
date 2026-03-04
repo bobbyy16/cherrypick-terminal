@@ -7,7 +7,7 @@ import {
   cherryPick,
   cherryPickContinue,
   cherryPickAbort,
-  getLocalBranches,
+  getBranches,
   getCurrentBranch,
   getRemoteUrl,
 } from './git';
@@ -36,7 +36,7 @@ interface AppState {
 
 export async function startUI(git: SimpleGit, repoPath: string): Promise<void> {
   const [allBranches, currentBranch, remoteUrl] = await Promise.all([
-    getLocalBranches(git),
+    getBranches(git),
     getCurrentBranch(git),
     getRemoteUrl(git),
   ]);
@@ -44,6 +44,7 @@ export async function startUI(git: SimpleGit, repoPath: string): Promise<void> {
   // ── Phase 1: Branch Selector ─────────────────────────────────────────────
   // Ask "which branch are you cherry-picking FROM?" before showing commit list.
   const sourceBranch = await showBranchSelector(allBranches, currentBranch);
+  if (!sourceBranch) return; // User escaped out or no branches available
 
   // ── Phase 2: Load commits unique to sourceBranch vs currentBranch ─────────
   // git log currentBranch..sourceBranch  → commits in source but NOT in current
@@ -71,8 +72,9 @@ export async function startUI(git: SimpleGit, repoPath: string): Promise<void> {
 
 function showBranchSelector(
   branches: string[],
-  currentBranch: string
-): Promise<string> {
+  currentBranch: string,
+  allowCancel = false
+): Promise<string | null> {
   return new Promise((resolve) => {
     const screen = blessed.screen({
       smartCSR: true,
@@ -109,7 +111,12 @@ function showBranchSelector(
     });
 
     // Branch list — exclude current branch from options
-    const choices = branches.filter((b) => b !== currentBranch);
+    let choices = branches.filter((b) => b !== currentBranch && !b.includes('HEAD'));
+    
+    // If no other branches exist (very rare, usually remotes exist)
+    if (choices.length === 0) {
+      choices = ['< No other branches found >'];
+    }
 
     const list = blessed.list({
       top: 9,
@@ -135,7 +142,9 @@ function showBranchSelector(
       left: 0,
       width: '100%',
       height: 3,
-      content: ' {gray-fg}[↑↓]{/gray-fg} Navigate   {green-fg}[Enter]{/green-fg} Select branch   {gray-fg}[q]{/gray-fg} Quit',
+      content: allowCancel
+        ? ' {gray-fg}[↑↓]{/gray-fg} Navigate   {green-fg}[Enter]{/green-fg} Select branch   {gray-fg}[Esc]{/gray-fg} Go Back   {gray-fg}[q]{/gray-fg} Quit'
+        : ' {gray-fg}[↑↓]{/gray-fg} Navigate   {green-fg}[Enter]{/green-fg} Select branch   {gray-fg}[q]{/gray-fg} Quit',
       tags: true,
       style: { fg: 'white', border: { fg: 'cyan' } },
       border: { type: 'line' },
@@ -151,9 +160,17 @@ function showBranchSelector(
     list.key('enter', () => {
       const idx = (list as any).selected as number;
       const chosen = choices[idx];
+      if (chosen === '< No other branches found >') return;
       screen.destroy();
       resolve(chosen);
     });
+
+    if (allowCancel) {
+      screen.key(['escape'], () => {
+        screen.destroy();
+        resolve(null);
+      });
+    }
 
     screen.key(['q', 'C-c'], () => {
       screen.destroy();
@@ -351,11 +368,14 @@ async function showMainUI(
       const tick = state.selected.has(c.hash)
         ? '{green-fg}✔{/green-fg} '
         : '  ';
-      const hash = `{yellow-fg}${shortHash(c.hash)}{/yellow-fg}`;
-      const date = `{gray-fg}${c.date}{/gray-fg}`;
-      const msg = truncate(c.message, 45);
-      const author = `{cyan-fg}${truncate(c.author_name, 12)}{/cyan-fg}`;
-      return `${tick}${hash} ${date} ${author} ${msg}`;
+      const hash   = `{yellow-fg}${shortHash(c.hash)}{/yellow-fg}`;
+      const date   = `{gray-fg}${c.date}{/gray-fg}`;
+      const author = `{cyan-fg}${truncate(c.author_name, 15)}{/cyan-fg}`;
+      // Commit message is the main label — given full available width
+      const msg    = `{white-fg}{bold}${truncate(c.message, 72)}{/bold}{/white-fg}`;
+      // Row: [✔] <hash>  <date>  <author>
+      //       └─ commit message (prominent, full width)
+      return `${tick}${hash}  ${date}  ${author}\n     ${msg}`;
     });
 
     if (items.length === 0) {
@@ -605,11 +625,18 @@ async function showMainUI(
   // b — change source branch (restart branch selector)
   commitList.key('b', async () => {
     screen.destroy();
-    const allBranchesNow = await getLocalBranches(git);
-    const newSource = await showBranchSelector(allBranchesNow, state.currentBranch);
-    state.sourceBranch = newSource;
-    state.selected.clear();
-    state.searchQuery = '';
+    const allBranchesNow = await getBranches(git);
+    const newSource = await showBranchSelector(allBranchesNow, state.currentBranch, true);
+    
+    if (newSource) {
+      state.sourceBranch = newSource;
+      state.selected.clear();
+      state.searchQuery = '';
+      state.commits = await getLog(git, 100, state.sourceBranch, state.currentBranch);
+      state.filteredCommits = state.commits;
+      state.currentIndex = 0;
+    }
+    // Re-render main UI regardless (either with new source, or returning from escape)
     await showMainUI(git, repoPath, state, allBranchesNow);
   });
 
