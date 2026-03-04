@@ -111,3 +111,8 @@ export async function getRemoteUrl(git: SimpleGit): Promise<string> {
     return '';
   }
 }
+
+export async function pushCurrentBranch(git: SimpleGit): Promise<void> {
+  const branch = await getCurrentBranch(git);
+  await git.push(['-u', 'origin', branch]);
+}

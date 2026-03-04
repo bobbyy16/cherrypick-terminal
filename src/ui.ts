@@ -10,6 +10,7 @@ import {
   getBranches,
   getCurrentBranch,
   getRemoteUrl,
+  pushCurrentBranch,
 } from './git';
 import { shortHash, truncate } from './util';
 import { getSavedToken, saveToken, hasToken } from './token';
@@ -638,7 +639,15 @@ async function showMainUI(
     } else {
       state.selected.clear();
       await reloadCommits();
-      setStatus('{green-fg}✔ Cherry-pick complete! Run [p] to create a PR.{/green-fg}');
+      setStatus('{yellow-fg}Pushing changes to remote…{/yellow-fg}');
+      screen.render();
+      try {
+        await pushCurrentBranch(git);
+        setStatus('{green-fg}✔ Cherry-pick & push complete! Run [p] to create a PR.{/green-fg}');
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setStatus(`{red-fg}Cherry-pick ok, but push failed: ${msg}{/red-fg}`);
+      }
     }
   });
 
@@ -720,10 +729,13 @@ async function showMainUI(
       await cherryPickContinue(git);
       hideConflict();
       await reloadCommits();
-      setStatus('{green-fg}✔ Cherry-pick continued!{/green-fg}');
+      setStatus('{yellow-fg}Pushing changes to remote…{/yellow-fg}');
+      screen.render();
+      await pushCurrentBranch(git);
+      setStatus('{green-fg}✔ Cherry-pick continued & pushed!{/green-fg}');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      setStatus(`{red-fg}Continue failed: ${msg}{/red-fg}`);
+      setStatus(`{red-fg}Continue/Push failed: ${msg}{/red-fg}`);
     }
   });
 
