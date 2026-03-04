@@ -17,12 +17,32 @@ export function createGit(repoPath: string): SimpleGit {
   return simpleGit(repoPath);
 }
 
-export async function getLog(git: SimpleGit, maxCount = 100): Promise<Commit[]> {
+/**
+ * Get commit log.
+ * - If fromBranch + baseBranch are provided, runs `git log baseBranch..fromBranch`
+ *   which returns only commits unique to fromBranch (not in baseBranch).
+ *   This is the core of the cherry-pick workflow:
+ *     baseBranch  = canvas (where you're going TO)
+ *     fromBranch  = STO3000-reloadlytopup-dev (where commits came FROM)
+ * - Otherwise falls back to plain git log on current branch.
+ */
+export async function getLog(
+  git: SimpleGit,
+  maxCount = 100,
+  fromBranch?: string,
+  baseBranch?: string
+): Promise<Commit[]> {
+  const rangeArgs =
+    fromBranch && baseBranch
+      ? [`${baseBranch}..${fromBranch}`]
+      : [];
+
   const log: LogResult<DefaultLogFields> = await git.log([
     `--max-count=${maxCount}`,
-    '--format=%H|%ad|%s|%an|%D',
     '--date=short',
+    ...rangeArgs,
   ]);
+
   return log.all.map((entry) => ({
     hash: entry.hash,
     date: entry.date,
@@ -30,6 +50,14 @@ export async function getLog(git: SimpleGit, maxCount = 100): Promise<Commit[]> 
     author_name: entry.author_name,
     refs: entry.refs,
   }));
+}
+
+/**
+ * Get local branches only (no remotes), sorted alphabetically.
+ */
+export async function getLocalBranches(git: SimpleGit): Promise<string[]> {
+  const summary = await git.branchLocal();
+  return Object.keys(summary.branches).sort();
 }
 
 export async function getDiffStat(git: SimpleGit, hash: string): Promise<string> {
