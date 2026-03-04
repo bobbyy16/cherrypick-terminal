@@ -531,7 +531,7 @@ async function showMainUI(
       parent: prForm,
       bottom: 0,
       left: 2,
-      content: '{green-fg}[Enter]{/green-fg} Submit    {gray-fg}[Esc]{/gray-fg} Cancel    {gray-fg}[Tab]{/gray-fg} Next field',
+      content: '{green-fg}[Enter]{/green-fg} Submit    {gray-fg}[Esc]{/gray-fg} Cancel',
       tags: true,
       style: { bg: 'black' },
     });
@@ -755,17 +755,6 @@ async function showMainUI(
     process.exit(0);
   });
 
-  // Tab — switch focus between list and diff panel
-  let diffFocused = false;
-  screen.key('tab', () => {
-    if (diffFocused) {
-      diffFocused = false;
-      commitList.focus();
-    } else {
-      diffFocused = true;
-      diffPanel.focus();
-    }
-  });
 
   // ─── Initial render ────────────────────────────────────────────────────────
 
