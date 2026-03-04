@@ -470,65 +470,113 @@ async function showMainUI(
       return;
     }
 
-    const prompt = blessed.prompt({
-      top: 'center',
-      left: 'center',
-      width: '60%',
-      height: 'shrink',
-      border: 'line',
-      label: ' {cyan-fg}Create Pull Request{/cyan-fg} ',
-      tags: true,
-      style: { border: { fg: 'cyan' } },
-    });
-    screen.append(prompt);
-
-    // Try to guess the base branch from the current branch name (e.g. STO-3000-canvas -> canvas)
-    // If we can't guess, default to 'main'
     let defaultBase = 'main';
     if (state.currentBranch.includes('canvas')) defaultBase = 'canvas';
     else if (state.currentBranch.includes('dev')) defaultBase = 'dev';
     else if (state.currentBranch.includes('master')) defaultBase = 'master';
 
-    prompt.input(
-      `Target branch (base to merge into, e.g. ${defaultBase}):`,
-      defaultBase,
-      async (_err, targetBranch) => {
-        if (!targetBranch) {
-          prompt.destroy();
-          screen.render();
-          return;
-        }
-        prompt.input(
-          'PR Title:',
-          `Cherry-pick: ${state.sourceBranch} → ${targetBranch}`,
-          async (_err2, title) => {
-            prompt.destroy();
-            if (!title) {
-              screen.render();
-              return;
-            }
-            setStatus('{yellow-fg}Creating PR…{/yellow-fg}');
-            try {
-              const pr = await createPullRequest({
-                token: getSavedToken(),
-                remoteUrl: state.remoteUrl,
-                head: state.currentBranch, // The branch we just cherry-picked INTO
-                base: targetBranch,        // The branch we want to merge into (e.g. canvas)
-                title,
-              });
-              setStatus(
-                `{green-fg}✔ PR #${pr.number} created: ${pr.url}{/green-fg}`
-              );
-            } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : String(e);
-              setStatus(`{red-fg}PR failed: ${msg}{/red-fg}`);
-            }
-            screen.render();
-          }
-        );
-      }
-    );
+    const prForm = blessed.form({
+      top: 'center',
+      left: 'center',
+      width: '60%',
+      height: 12,
+      border: 'line',
+      label: ' {bold}{cyan-fg}Create Pull Request{/cyan-fg}{/bold} ',
+      tags: true,
+      style: { border: { fg: 'cyan' }, bg: 'black' },
+    });
+
+    const lblBase = blessed.text({
+      parent: prForm,
+      top: 1,
+      left: 2,
+      content: 'Target branch (base to merge into):',
+      style: { fg: 'white', bg: 'black' },
+    });
+
+    const inputBase = blessed.textbox({
+      parent: prForm,
+      top: 2,
+      left: 2,
+      width: '90%',
+      height: 3,
+      border: 'line',
+      value: defaultBase,
+      inputOnFocus: true,
+      style: { fg: 'white', bg: 'black', border: { fg: 'cyan' } },
+    });
+
+    const lblTitle = blessed.text({
+      parent: prForm,
+      top: 5,
+      left: 2,
+      content: 'PR Title:',
+      style: { fg: 'white', bg: 'black' },
+    });
+
+    const inputTitle = blessed.textbox({
+      parent: prForm,
+      top: 6,
+      left: 2,
+      width: '90%',
+      height: 3,
+      border: 'line',
+      value: `Cherry-pick: ${state.sourceBranch} → ${state.currentBranch}`,
+      inputOnFocus: true,
+      style: { fg: 'white', bg: 'black', border: { fg: 'cyan' } },
+    });
+
+    const helpTxt = blessed.text({
+      parent: prForm,
+      bottom: 0,
+      left: 2,
+      content: '{green-fg}[Enter]{/green-fg} Submit    {gray-fg}[Esc]{/gray-fg} Cancel    {gray-fg}[Tab]{/gray-fg} Next field',
+      tags: true,
+      style: { bg: 'black' },
+    });
+
+    screen.append(prForm);
+    inputBase.focus();
     screen.render();
+
+    // Key handlers for the form
+    prForm.on('cancel', () => { // Catch Esc globally if form has it
+      prForm.destroy();
+      commitList.focus();
+      screen.render();
+    });
+
+    inputBase.key('escape', () => { prForm.destroy(); commitList.focus(); screen.render(); });
+    inputTitle.key('escape', () => { prForm.destroy(); commitList.focus(); screen.render(); });
+
+    inputBase.key('enter', () => { inputTitle.focus(); screen.render(); });
+    
+    inputTitle.key('enter', async () => {
+      const base = inputBase.getValue().trim();
+      const title = inputTitle.getValue().trim();
+      
+      if (!base || !title) return; // Ignore empty submit
+      
+      prForm.destroy();
+      commitList.focus();
+      setStatus('{yellow-fg}Creating PR…{/yellow-fg}');
+      screen.render();
+
+      try {
+        const pr = await createPullRequest({
+          token: getSavedToken(),
+          remoteUrl: state.remoteUrl,
+          head: state.currentBranch, // The branch we just cherry-picked INTO
+          base: base,                // The branch we want to merge into (e.g. canvas)
+          title: title,
+        });
+        setStatus(`{green-fg}✔ PR #${pr.number} created: ${pr.url}{/green-fg}`);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setStatus(`{red-fg}PR failed: ${msg}{/red-fg}`);
+      }
+      screen.render();
+    });
   }
 
   function showTokenPrompt(): void {
