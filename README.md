@@ -15,7 +15,6 @@ An interactive terminal UI for `git cherry-pick` — browse commits, select what
 | Search / filter commits        | `/` then type       |
 | Create GitHub Pull Request     | `p`                 |
 | Set / update GitHub token      | `t`                 |
-| Tab between panels             | `Tab`               |
 | Quit                           | `q` or `Ctrl+C`     |
 
 ---
@@ -23,7 +22,7 @@ An interactive terminal UI for `git cherry-pick` — browse commits, select what
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/cherrypick-terminal
+git clone https://github.com/bobbyy16/cherrypick-terminal
 cd cherrypick-terminal
 npm install
 npm run build
