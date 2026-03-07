@@ -1,5 +1,5 @@
 {
-  "name": "cherrypick-terminal",
+  "name": "@bobbyy16/cherrypick-terminal",
   "version": "0.1.0",
   "description": "Interactive terminal UI for git cherry-pick with PR creation",
   "main": "dist/index.js",
