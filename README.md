@@ -63,3 +63,12 @@ If a cherry-pick conflicts, the app pauses and shows a list of conflicted files.
 - [`simple-git`](https://github.com/steveukx/git-js) — Git operations
 - [`@octokit/rest`](https://github.com/octokit/rest.js) — GitHub API
 - [`conf`](https://github.com/sindresorhus/conf) — Token persistence
+
+---
+
+## Author
+
+**Bobbyy16**
+
+- [GitHub Profile](https://github.com/bobbyy16)
+- [Sponsor / Support](https://github.com/sponsors/bobbyy16)
