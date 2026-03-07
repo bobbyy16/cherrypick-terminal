@@ -68,7 +68,7 @@ If a cherry-pick conflicts, the app pauses and shows a list of conflicted files.
 
 ## Author
 
-**Bobbyy16**
+**Abhishek k**
 
 - [GitHub Profile](https://github.com/bobbyy16)
 - [Sponsor / Support](https://github.com/sponsors/bobbyy16)
