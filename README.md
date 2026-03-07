@@ -4,6 +4,22 @@ An interactive terminal UI for `git cherry-pick` — browse commits, select what
 
 ---
 
+## Installation
+
+```bash
+npm install -g @bobbyy16/cherrypick-terminal
+```
+
+## Usage
+
+Navigate to any Git repository and run:
+
+```bash
+cherrypick
+```
+
+---
+
 ## Features
 
 | Feature                        | Key                 |
@@ -16,32 +32,6 @@ An interactive terminal UI for `git cherry-pick` — browse commits, select what
 | Create GitHub Pull Request     | `p`                 |
 | Set / update GitHub token      | `t`                 |
 | Quit                           | `q` or `Ctrl+C`     |
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/bobbyy16/cherrypick-terminal
-cd cherrypick-terminal
-npm install
-npm run build
-```
-
----
-
-## Usage
-
-```bash
-# Run on current git repo
-npm start
-
-# Dev mode (ts-node, no build needed)
-npm run dev
-
-# Point to a different repo
-node dist/index.js /path/to/your/repo
-```
 
 ---
 
@@ -64,20 +54,6 @@ If a cherry-pick conflicts, the app pauses and shows a list of conflicted files.
 - Resolve conflicts in your editor
 - Press **`c`** inside the app → `git cherry-pick --continue`
 - Press **`a`** → `git cherry-pick --abort`
-
----
-
-## Project Structure
-
-```
-src/
-├── index.ts    — entry point, CLI arg parsing
-├── ui.ts       — blessed TUI layout and keybindings
-├── git.ts      — simple-git wrappers
-├── token.ts    — GitHub token storage (conf)
-├── github.ts   — PR creation via @octokit/rest
-└── util.ts     — helpers (URL parser, truncate, etc.)
-```
 
 ---
 
