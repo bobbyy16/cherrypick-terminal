@@ -1,6 +1,6 @@
 {
   "name": "@bobbyy16/cherrypick-terminal",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Interactive terminal UI for git cherry-pick with PR creation",
   "main": "dist/index.js",
   "bin": {
