@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+process.env.FORCE_COLOR = '1';
 import * as path from 'path';
 import { createGit } from './git';
 import { startUI } from './ui';

@@ -81,6 +81,7 @@ function showBranchSelector(
       smartCSR: true,
       title: '🍒 CherryPick Terminal — Select Source Branch',
       fullUnicode: true,
+      colors: 256,
     });
 
     // Header
@@ -193,6 +194,7 @@ async function showMainUI(
     title: '🍒 CherryPick Terminal',
     fullUnicode: true,
     dockBorders: true,
+    colors: 256,
   });
 
   // ─── Layout ────────────────────────────────────────────────────────────────
